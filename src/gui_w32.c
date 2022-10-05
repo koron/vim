@@ -28,6 +28,7 @@
 #if defined(FEAT_DIRECTX)
 # include "gui_dwrite.h"
 #endif
+#include "darkmode.c"
 
 // values for "dead_key"
 #define DEAD_KEY_OFF			0	// no dead key
@@ -4881,6 +4882,17 @@ _WndProc(
 	return _OnDpiChanged(hwnd, (UINT)LOWORD(wParam), (UINT)HIWORD(wParam),
 		(RECT*)lParam);
 
+    case WM_CREATE:
+	{
+	    BOOL dark = TRUE;
+	    WINDOWCOMPOSITIONATTRIBDATA data = {
+		 WCA_USEDARKMODECOLORS, &dark, sizeof(dark)
+	    };
+	    _AllowDarkModeForWindow(hwnd, TRUE);
+	    _SetWindowCompositionAttribute(hwnd, &data);
+	}
+	return 0;
+
     default:
 #ifdef MSWIN_FIND_REPLACE
 	if (uMsg == s_findrep_msg && s_findrep_msg != 0)
@@ -5239,6 +5251,9 @@ gui_mch_init(void)
     if (s_hwnd != NULL)
 	goto theend;
 
+    InitDarkMode();
+    _SetPreferredAppMode(AllowDark);
+
     /*
      * Load the tearoff bitmap
      */
@@ -5341,6 +5356,7 @@ gui_mch_init(void)
 
     if (s_hwnd == NULL)
 	return FAIL;
+    _AllowDarkModeForWindow(s_hwnd, TRUE);
 
     if (pGetDpiForWindow != NULL)
     {
@@ -5382,6 +5398,7 @@ gui_mch_init(void)
 
     if (s_textArea == NULL)
 	return FAIL;
+    _AllowDarkModeForWindow(s_textArea, TRUE);
 
 #ifdef FEAT_LIBCALL
     // Try loading an icon from $RUNTIMEPATH/bitmaps/vim.ico.
