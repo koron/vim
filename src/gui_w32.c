@@ -29,6 +29,8 @@
 # include "gui_dwrite.h"
 #endif
 #include "darkmode.c"
+#include "uxtheme.h"
+#pragma comment(lib, "uxtheme.lib")
 
 // values for "dead_key"
 #define DEAD_KEY_OFF			0	// no dead key
@@ -7893,6 +7895,10 @@ initialise_toolbar(void)
     gui_mch_show_toolbar(vim_strchr(p_go, GO_TOOLBAR) != NULL);
 
     update_toolbar_size();
+
+    SetWindowTheme(s_toolbarhwnd, L"DarkMode::Toolbar", NULL);
+    _AllowDarkModeForWindow(s_toolbarhwnd, TRUE);
+    SendMessage(s_toolbarhwnd, WM_THEMECHANGED, 0, 0);
 }
 
     static void
