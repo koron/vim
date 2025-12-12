@@ -549,20 +549,6 @@ CXXFLAGS = -std=gnu++11
 WINDRES_FLAGS =
 EXTRA_LIBS =
 
-ifdef GETTEXT
-DEFINES += -DHAVE_GETTEXT -DHAVE_LOCALE_H
-GETTEXTINCLUDE = $(GETTEXT)/include
-GETTEXTLIB = $(INTLPATH)
- ifeq (yes, $(GETTEXT))
-DEFINES += -DDYNAMIC_GETTEXT
- else ifdef DYNAMIC_GETTEXT
-DEFINES += -D$(DYNAMIC_GETTEXT)
-  ifdef GETTEXT_DYNAMIC
-DEFINES += -DGETTEXT_DYNAMIC -DGETTEXT_DLL=\"$(GETTEXT_DYNAMIC)\"
-  endif
- endif
-endif
-
 ifdef PERL
 CFLAGS += -I$(PERLLIBS) -DFEAT_PERL -DPERL_IMPLICIT_CONTEXT -DPERL_IMPLICIT_SYS
  ifeq (yes, $(DYNAMIC_PERL))
@@ -709,37 +695,6 @@ DEFINES += -DDYNAMIC_SODIUM -DDYNAMIC_SODIUM_DLL=\"$(SODIUM_DLL)\"
  else
 SODIUMLIB = -lsodium
  endif
-endif
-
-# Only allow XPM for a GUI build.
-ifeq (yes, $(GUI))
-
- ifndef XPM
-  ifeq ($(ARCH),i386)
-XPM = xpm/x86
-  endif
-  ifeq ($(ARCH),i486)
-XPM = xpm/x86
-  endif
-  ifeq ($(ARCH),i586)
-XPM = xpm/x86
-  endif
-  ifeq ($(ARCH),i686)
-XPM = xpm/x86
-  endif
-  ifeq ($(ARCH),x86-64)
-XPM = xpm/x64
-  endif
-  ifeq ($(ARCH),native)
-XPM = no
-  endif
- endif
- ifdef XPM
-  ifneq ($(XPM),no)
-CFLAGS += -DFEAT_XPM_W32 -I $(XPM)/include -I $(XPM)/../include
-  endif
- endif
-
 endif
 
 ifeq ($(DEBUG),yes)
@@ -965,13 +920,13 @@ LIB += -ld2d1 -ldwrite
 USE_STDCPLUS = yes
  endif
 endif
-ifneq ($(XPM),no)
+
 # Only allow XPM for a GUI build.
- ifeq (yes, $(GUI))
+ifeq (yes, $(GUI))
+# Enable XPM as a static library.
+CFLAGS += -DFEAT_XPM_W32 -DHAVE_X11_XPM_H=1
 OBJ += $(OUTDIR)/xpm_w32.o
-# You'll need libXpm.a from http://gnuwin32.sf.net
-LIB += -L$(XPM)/lib -lXpm
- endif
+LIB += -Wl,-Bstatic -lXpm -Wl,-Bdynamic
 endif
 
 ifeq ($(TERMINAL),yes)
@@ -1053,20 +1008,6 @@ OUTDIR = obj$(DEBUG_SUFFIX)$(MZSCHEME_SUFFIX)$(ARCH)
 MAIN_TARGET = $(TARGET)
 endif
 
-ifdef GETTEXT
- ifneq (yes, $(GETTEXT))
-CFLAGS += -I$(GETTEXTINCLUDE)
-  ifndef STATIC_GETTEXT
-LIB += -L$(GETTEXTLIB) -l$(INTLLIB)
-   ifeq (USE_SAFE_GETTEXT_DLL, $(DYNAMIC_GETTEXT))
-OBJ+=$(SAFE_GETTEXT_DLL_OBJ)
-   endif
-  else
-LIB += -L$(GETTEXTLIB) -lintl
-  endif
- endif
-endif
-
 ifdef PERL
  ifeq (no, $(DYNAMIC_PERL))
 LIB += -L$(PERLLIBS) -lperl$(PERL_VER)
@@ -1097,13 +1038,9 @@ LIB += -limm32
  endif
 endif
 
-ifdef ICONV
- ifneq (yes, $(ICONV))
-LIB += -L$(ICONV)
-CFLAGS += -I$(ICONV)
- endif
-DEFINES+=-DDYNAMIC_ICONV
-endif
+# Enable gettext (intl) and iconv as a static libraries.
+DEFINES += -DHAVE_GETTEXT=1 -DHAVE_BIND_TEXTDOMAIN_CODESET=1 -DHAVE_LOCALE_H=1 -DHAVE_ICONV_H=1 -DUSE_ICONV
+LIB += -Wl,-Bstatic -lintl -liconv -Wl,-Bdynamic
 
 ifeq (yes, $(SOUND))
 LIB += -lwinmm
