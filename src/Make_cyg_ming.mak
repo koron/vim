@@ -1117,11 +1117,21 @@ LIB += -limm32
 endif
 
 ifdef ICONV
- ifneq (yes, $(ICONV))
+ # Using iconv from MSYSTEM
+ ifeq ($(findstring msystem, $(ICONV)),msystem)
+DEFINES += -DHAVE_ICONV_H=1 -DHAVE_ICONV=1
+  ifeq ($(ICONV),msystem-static)
+LIB += -Wl,-Bstatic -liconv -Wl,-Bdynamic
+  else
+LIB += -liconv
+  endif
+ else
+  ifneq (yes, $(ICONV))
 LIB += -L$(ICONV)
 CFLAGS += -I$(ICONV)
- endif
+  endif
 DEFINES+=-DDYNAMIC_ICONV
+ endif
 endif
 
 ifeq (yes, $(SOUND))
