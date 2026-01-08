@@ -19,7 +19,11 @@
 // Engage Windows support in libXpm
 #define FOR_MSW
 
-#include "xpm.h"
+#ifdef HAVE_X11_XPM_H
+# include <X11/xpm.h>
+#else
+# include "xpm.h"
+#endif
 
 /*
  * Tries to load an Xpm image from the file "filename".

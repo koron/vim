@@ -743,7 +743,9 @@ XPM = no
   endif
  endif
  ifdef XPM
-  ifneq ($(XPM),no)
+  ifeq ($(findstring msystem, $(XPM)),msystem)
+CFLAGS += -DFEAT_XPM_W32 -DHAVE_X11_XPM_H=1
+  else ifneq ($(XPM),no)
 CFLAGS += -DFEAT_XPM_W32 -I $(XPM)/include -I $(XPM)/../include
   endif
  endif
@@ -977,8 +979,17 @@ ifneq ($(XPM),no)
 # Only allow XPM for a GUI build.
  ifeq (yes, $(GUI))
 OBJ += $(OUTDIR)/xpm_w32.o
+  # Using XPM from MSYSTEM
+  ifeq ($(findstring msystem, $(XPM)),msystem)
+   ifeq ($(XPM),msystem-static)
+LIB += -Wl,-Bstatic -lXpm -Wl,-Bdynamic
+   else
+LIB += -lXpm
+   endif
+  else
 # You'll need libXpm.a from http://gnuwin32.sf.net
 LIB += -L$(XPM)/lib -lXpm
+  endif
  endif
 endif
 
