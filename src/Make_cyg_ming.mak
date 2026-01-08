@@ -80,6 +80,41 @@ DIRECTX=yes
 # Set to yes to cross-compile from unix; no=native Windows (and Cygwin).
 CROSS=no
 
+# Specify yes or static if you want to use MSYSTEM (MSYS2) packages for some
+# of the libraries needed to build the Vim. If you specify yes, it will link
+# to DLLs, and those packages will need to be installed at runtime. If you
+# specify no, it will link to static libraries, and those packages will not
+# be required at runtime.
+#
+# Currently, the libraries that are targeted are ICONV, GETTEXT, and XPM. If
+# you specify yes, all will be set to msystem, and if you specify static,
+# all will be set to msystem-static.
+#
+# The default is no, so the previous configuration method can be used as is.
+#
+# The libraries and required packages are as follows:
+#
+#   If MSYSTEM=UCRT64 (recommended):
+#     ICONV:   mingw-w64-ucrt-x86_64-libiconv
+#     GETTEXT: mingw-w64-ucrt-x86_64-gettext-runtime
+#     XPM:     mingw-w64-ucrt-x86_64-xpm-nox
+#
+#   If MSYSTEM=clang64:
+#     ICONV:   mingw-w64-clang-x86_64-libiconv
+#     GETTEXT: mingw-w64-clang-x86_64-gettext-runtime
+#     XPM:     mingw-w64-clang-x86_64-xpm-nox
+#
+#   If MSYSTEM=MINGW64:
+#     ICONV:   mingw-w64-x86_64-libiconv
+#     GETTEXT: mingw-w64-x86_64-gettext-runtime
+#     XPM:     mingw-w64-x86_64-xpm-nox
+#
+#   If MSYSTEM=MINGW64:
+#     ICONV:   mingw-w64-i686-libiconv
+#     GETTEXT: mingw-w64-i686-gettext-runtime
+#     XPM:     mingw-w64-i686-xpm-nox
+USE_MSYSTEM_PACKAGES=no
+
 # Set to path to iconv.h and libiconv.a to enable using 'iconv.dll'.
 # Use "yes" when the path does not need to be define.
 #ICONV="."
@@ -261,6 +296,17 @@ ARCH := native
  else
 ARCH := $(shell $(CC) -dumpmachine | sed -e "s/-.*//" -e "s/_/-/" -e "s/^mingw32$$/i686/")
  endif
+endif
+
+# Configure libraries according to the value of USE_MSYSTEM_PACKAGES
+ifeq (yes, $(USE_MSYSTEM_PACKAGES))
+ICONV=msystem
+GETTEXT=msystem
+XPM=msystem
+else ifeq (static, $(USE_MSYSTEM_PACKAGES))
+ICONV=msystem-static
+GETTEXT=msystem-static
+XPM=msystem-static
 endif
 
 
