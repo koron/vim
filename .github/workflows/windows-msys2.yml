@@ -1,0 +1,72 @@
+name: Windows with MSYS2
+
+on:
+  push:
+    branches: ['**']
+
+jobs:
+  windows-msys2:
+    name: Windows +MSYS2
+    runs-on: windows-2025
+
+    defaults:
+      run:
+        shell: cmd
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { features: HUGE, VIMDLL: yes, GUI: yes, msys: UCRT64,  cc: clang, menv: ucrt-x86_64  }
+          - { features: HUGE, VIMDLL: yes, GUI: yes, msys: MINGW64, cc: gcc,   menv: x86_64       }
+          #- { features: HUGE, VIMDLL: no,  GUI: no,  msys: MINGW32, cc: gcc,   menv: i686         }
+          #- { features: HUGE, VIMDLL: yes, GUI: no,  msys: CLANG64, cc: clang, menv: clang-x86_64 }
+
+    steps:
+      - name: Setup MSYS2 packages
+        uses: msys2/setup-msys2@4f806de0a5a7294ffabaff804b38a9b435a73bda # v2.30.0
+        id: msys2
+        with:
+          #update: true
+          install: >-
+            diffutils
+            mingw-w64-${{ matrix.menv }}-make
+            mingw-w64-${{ matrix.menv }}-gcc
+            mingw-w64-${{ matrix.menv }}-clang
+            mingw-w64-${{ matrix.menv }}-llvm
+            mingw-w64-${{ matrix.menv }}-libiconv
+            mingw-w64-${{ matrix.menv }}-gettext
+            mingw-w64-${{ matrix.menv }}-xpm-nox
+          msystem: ${{ matrix.msys }}
+          release: false
+
+      - name: Setup MSYS2 path
+        run: |
+          echo ${{ steps.msys2.outputs.msys2-location }}\%MSYSTEM%\bin>> %GITHUB_PATH%
+          echo ${{ steps.msys2.outputs.msys2-location }}\usr\bin>> %GITHUB_PATH%
+
+      - name: Checkout repository from github
+        uses: actions/checkout@v6
+
+      - name: Build (MSYS2)
+        working-directory: src
+        run: |
+          mingw32-make -f Make_ming.mak -j4 ^
+            CC=${{ matrix.cc }} ^
+            FEATURES=${{ matrix.features }} ^
+            GUI=${{ matrix.GUI }} ^
+            VIMDLL=${{ matrix.VIMDLL }} ^
+            STATIC_STDCPLUS=yes ^
+            USE_MSYSTEM_PACKAGES=yes
+
+      - name: Check version
+        run: |
+          src\vim --version || exit 1
+          src\vim -u NONE -i NONE --not-a-term -esNX -V1 -S ci\if_ver-1.vim -c quit
+          src\vim -u NONE -i NONE --not-a-term -esNX -V1 -S ci\if_ver-2.vim -c quit
+
+      - name: Test Vim
+        timeout-minutes: 15
+        working-directory: src/testdir
+        run: |
+          mingw32-make -f Make_ming.mak VIMPROG=..\vim
