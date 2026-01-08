@@ -558,15 +558,20 @@ WINDRES_FLAGS =
 EXTRA_LIBS =
 
 ifdef GETTEXT
+  # Using gettext (libintl) from MSYSTEM
+ ifeq ($(findstring msystem, $(GETTEXT)),msystem)
+DEFINES += -DHAVE_GETTEXT=1 -DHAVE_BIND_TEXTDOMAIN_CODESET=1 -DHAVE_LOCALE_H=1
+ else
 DEFINES += -DHAVE_GETTEXT -DHAVE_LOCALE_H
 GETTEXTINCLUDE = $(GETTEXT)/include
 GETTEXTLIB = $(INTLPATH)
- ifeq (yes, $(GETTEXT))
+  ifeq (yes, $(GETTEXT))
 DEFINES += -DDYNAMIC_GETTEXT
- else ifdef DYNAMIC_GETTEXT
+  else ifdef DYNAMIC_GETTEXT
 DEFINES += -D$(DYNAMIC_GETTEXT)
-  ifdef GETTEXT_DYNAMIC
+   ifdef GETTEXT_DYNAMIC
 DEFINES += -DGETTEXT_DYNAMIC -DGETTEXT_DLL=\"$(GETTEXT_DYNAMIC)\"
+   endif
   endif
  endif
 endif
@@ -1073,15 +1078,23 @@ MAIN_TARGET = $(TARGET)
 endif
 
 ifdef GETTEXT
- ifneq (yes, $(GETTEXT))
-CFLAGS += -I$(GETTEXTINCLUDE)
-  ifndef STATIC_GETTEXT
-LIB += -L$(GETTEXTLIB) -l$(INTLLIB)
-   ifeq (USE_SAFE_GETTEXT_DLL, $(DYNAMIC_GETTEXT))
-OBJ+=$(SAFE_GETTEXT_DLL_OBJ)
-   endif
+ ifeq ($(findstring msystem, $(GETTEXT)),msystem)
+  ifeq ($(GETTEXT),msystem-static)
+LIB += -Wl,-Bstatic -lintl -Wl,-Bdynamic
   else
+LIB += -lintl
+  endif
+ else
+  ifneq (yes, $(GETTEXT))
+CFLAGS += -I$(GETTEXTINCLUDE)
+   ifndef STATIC_GETTEXT
+LIB += -L$(GETTEXTLIB) -l$(INTLLIB)
+    ifeq (USE_SAFE_GETTEXT_DLL, $(DYNAMIC_GETTEXT))
+OBJ+=$(SAFE_GETTEXT_DLL_OBJ)
+    endif
+   else
 LIB += -L$(GETTEXTLIB) -lintl
+   endif
   endif
  endif
 endif
