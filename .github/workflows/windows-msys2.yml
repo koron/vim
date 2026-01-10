@@ -17,13 +17,13 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { msys: UCRT64,  cc: gcc,   menv: ucrt-x86_64  }
-          - { msys: UCRT64,  cc: clang,   menv: ucrt-x86_64  }
-          - { msys: CLANG64, cc: clang, menv: clang-x86_64 }
-          - { msys: MINGW64, cc: gcc,   menv: x86_64       }
-          - { msys: MINGW64, cc: clang,   menv: x86_64       }
+          - { msys: UCRT64,  cc: gcc   }
+          - { msys: UCRT64,  cc: clang }
+          - { msys: CLANG64, cc: clang }
+          - { msys: MINGW64, cc: gcc   }
+          - { msys: MINGW64, cc: clang }
           # MIGW32 is not built because the tests are slow and time out.
-          #- { msys: MINGW32, menv: i686,         cc: gcc   }
+          #- { msys: MINGW32, cc: gcc   }
 
     steps:
       - name: Setup MSYS2 packages
@@ -31,15 +31,15 @@ jobs:
         id: msys2
         with:
           update: true
-          install: >-
-            mingw-w64-${{ matrix.menv }}-diffutils
-            mingw-w64-${{ matrix.menv }}-make
-            mingw-w64-${{ matrix.menv }}-gcc
-            mingw-w64-${{ matrix.menv }}-clang
-            mingw-w64-${{ matrix.menv }}-llvm
-            mingw-w64-${{ matrix.menv }}-libiconv
-            mingw-w64-${{ matrix.menv }}-gettext
-            mingw-w64-${{ matrix.menv }}-xpm-nox
+          pacboy: >-
+            diffutils:p
+            make:p
+            gcc:p
+            clang:p
+            llvm:p
+            libiconv:p
+            gettext:p
+            xpm-nox:p
           msystem: ${{ matrix.msys }}
           release: false
 
