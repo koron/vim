@@ -17,21 +17,26 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { features: HUGE, VIMDLL: yes, GUI: yes, msys: UCRT64,  cc: gcc,   menv: ucrt-x86_64  }
-          - { features: HUGE, VIMDLL: yes, GUI: yes, msys: CLANG64, cc: clang, menv: clang-x86_64 }
-          - { features: HUGE, VIMDLL: yes, GUI: yes, msys: MINGW64, cc: gcc,   menv: x86_64       }
+          - { msys: UCRT64,  cc: gcc,   menv: ucrt-x86_64  }
+          - { msys: UCRT64,  cc: clang,   menv: ucrt-x86_64  }
+          - { msys: CLANG64, cc: clang, menv: clang-x86_64 }
+          - { msys: MINGW64, cc: gcc,   menv: x86_64       }
+          - { msys: MINGW64, cc: clang,   menv: x86_64       }
           # MIGW32 is not built because the tests are slow and time out.
-          #- { features: HUGE, VIMDLL: yes, GUI: yes, msys: MINGW32, cc: gcc,   menv: i686         }
+          #- { msys: MINGW32, menv: i686,         cc: gcc   }
 
     steps:
       - name: Setup MSYS2 packages
         uses: msys2/setup-msys2@4f806de0a5a7294ffabaff804b38a9b435a73bda # v2.30.0
         id: msys2
         with:
-          #update: true
+          update: true
           install: >-
-            diffutils
-            mingw-w64-${{ matrix.menv }}-toolchain
+            mingw-w64-${{ matrix.menv }}-diffutils
+            mingw-w64-${{ matrix.menv }}-make
+            mingw-w64-${{ matrix.menv }}-gcc
+            mingw-w64-${{ matrix.menv }}-clang
+            mingw-w64-${{ matrix.menv }}-llvm
             mingw-w64-${{ matrix.menv }}-libiconv
             mingw-w64-${{ matrix.menv }}-gettext
             mingw-w64-${{ matrix.menv }}-xpm-nox
@@ -51,9 +56,9 @@ jobs:
         run: |
           mingw32-make -f Make_ming.mak -j4 ^
             CC=${{ matrix.cc }} ^
-            FEATURES=${{ matrix.features }} ^
-            GUI=${{ matrix.GUI }} ^
-            VIMDLL=${{ matrix.VIMDLL }} ^
+            FEATURES=HUGE ^
+            VIMDLL=yes ^
+            GUI=yes ^
             STATIC_STDCPLUS=yes ^
             USE_MSYSTEM_PACKAGES=yes
 
