@@ -72,16 +72,16 @@ jobs:
       - name: List env
         run: set
 
-      - name: Test vim
-        timeout-minutes: 15
-        working-directory: src/testdir
-        run: |
-          SET SHELL=
-          mingw32-make -f Make_ming.mak VIMPROG=..\vim clean nongui
-
       - name: Test gvim
         timeout-minutes: 15
         working-directory: src/testdir
         run: |
           SET SHELL=
           mingw32-make -f Make_ming.mak VIMPROG=..\gvim clean gui
+
+      - name: Test vim (tiny)
+        timeout-minutes: 15
+        working-directory: src/testdir
+        run: |
+          SET SHELL=
+          mingw32-make -f Make_ming.mak VIMPROG=..\vim clean tiny
