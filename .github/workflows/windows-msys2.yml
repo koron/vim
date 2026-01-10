@@ -6,7 +6,7 @@ on:
 
 jobs:
   windows-msys2:
-    name: Windows +MSYS2
+    name: MSYS2
     runs-on: windows-2025
 
     defaults:
@@ -60,7 +60,7 @@ jobs:
             FEATURES=HUGE ^
             VIMDLL=yes ^
             GUI=yes ^
-            STATIC_STDCPLUS=yes ^
+            STATIC_STDCPLUS=${{ matrix.pkgs == 'static' && 'yes' || 'no' }} ^
             USE_MSYSTEM_PACKAGES=${{ matrix.pkgs }}
 
       - name: Check version
