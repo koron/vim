@@ -99,7 +99,7 @@ CROSS=no
 #     GETTEXT: mingw-w64-ucrt-x86_64-gettext-runtime
 #     XPM:     mingw-w64-ucrt-x86_64-xpm-nox
 #
-#   If MSYSTEM=clang64:
+#   If MSYSTEM=CLANG64:
 #     ICONV:   mingw-w64-clang-x86_64-libiconv
 #     GETTEXT: mingw-w64-clang-x86_64-gettext-runtime
 #     XPM:     mingw-w64-clang-x86_64-xpm-nox
@@ -109,7 +109,7 @@ CROSS=no
 #     GETTEXT: mingw-w64-x86_64-gettext-runtime
 #     XPM:     mingw-w64-x86_64-xpm-nox
 #
-#   If MSYSTEM=MINGW64:
+#   If MSYSTEM=MINGW32:
 #     ICONV:   mingw-w64-i686-libiconv
 #     GETTEXT: mingw-w64-i686-gettext-runtime
 #     XPM:     mingw-w64-i686-xpm-nox
@@ -141,6 +141,18 @@ CSCOPE=yes
 
 # Set to yes to enable Netbeans support (requires CHANNEL).
 NETBEANS=$(GUI)
+
+ifdef MSYSTEM
+  ifeq (CLANG64, $(MSYSTEM))
+USING_CLANG64:=yes
+# The only C/C++ compiler for MSYSTEM=CLANG64 is clang. gcc is an alias for
+# clang.
+CC:=clang
+  endif
+endif
+ifndef USING_CLANG64
+USING_CLANG64:=no
+endif
 
 # Set to yes to enable inter process communication.
 ifeq (HUGE, $(FEATURES))
@@ -177,7 +189,13 @@ endif
 # Link against the shared version of libwinpthread by default.  Set
 # STATIC_WINPTHREAD to "yes" to link against static version instead.
 ifndef STATIC_WINPTHREAD
+ ifeq (yes, $(USING_CLANG64))
+# In the MSYSTEM=CLANG64 environment, winpthread is not required because it
+# links with libc++
+STATIC_WINPTHREAD=no
+ else
 STATIC_WINPTHREAD=$(STATIC_STDCPLUS)
+ endif
 endif
 # If you use TDM-GCC(-64), change HAS_GCC_EH to "no".
 # This is used when STATIC_STDCPLUS=yes.
@@ -602,6 +620,11 @@ CXXFLAGS = -std=gnu++11
 # This used to have --preprocessor, but it's no longer supported
 WINDRES_FLAGS =
 EXTRA_LIBS =
+
+# Tell C/C++ source files that they are built with MSYSTEM=CLANG64
+ifeq (yes, $(USING_CLANG64))
+DEFINES += -DMSYSTEM_CLANG64
+endif
 
 ifdef GETTEXT
   # Using gettext (libintl) from MSYSTEM
@@ -1200,8 +1223,12 @@ endif
 ifeq (yes, $(USE_STDCPLUS))
 LINK = $(CXX)
  ifeq (yes, $(STATIC_STDCPLUS))
+  ifeq (yes, $(USING_CLANG64))
+LIB += -Wl,-Bstatic -lc++ -Wl,-Bdynamic
+  else
 #LIB += -static-libstdc++ -static-libgcc
 LIB += -Wl,-Bstatic -lstdc++ -lgcc -Wl,-Bdynamic
+  endif
  endif
 else
 LINK = $(CC)
