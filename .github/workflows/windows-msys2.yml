@@ -17,11 +17,13 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { msys: UCRT64,  cc: gcc   }
-          - { msys: UCRT64,  cc: clang }
-          - { msys: CLANG64, cc: clang }
-          - { msys: MINGW64, cc: gcc   }
-          - { msys: MINGW64, cc: clang }
+          - { msys: UCRT64,  cc: gcc,   pkgs: yes    }
+          - { msys: UCRT64,  cc: gcc,   pkgs: static }
+          - { msys: UCRT64,  cc: clang, pkgs: yes    }
+          - { msys: CLANG64, cc: clang, pkgs: yes    }
+          - { msys: CLANG64, cc: clang, pkgs: static }
+          - { msys: MINGW64, cc: gcc,   pkgs: yes    }
+          - { msys: MINGW64, cc: clang, pkgs: yes    }
           # MIGW32 is not built because the tests are slow and time out.
           #- { msys: MINGW32, cc: gcc   }
 
@@ -60,7 +62,7 @@ jobs:
             VIMDLL=yes ^
             GUI=yes ^
             STATIC_STDCPLUS=yes ^
-            USE_MSYSTEM_PACKAGES=yes
+            USE_MSYSTEM_PACKAGES=${{ matrix.pkgs }}
 
       - name: Check version
         run: |
