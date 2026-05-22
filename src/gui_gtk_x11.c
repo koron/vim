@@ -6547,8 +6547,15 @@ gui_mch_beep(void)
 gui_mch_flash(int msec)
 {
 #if GTK_CHECK_VERSION(3,0,0)
-    // TODO Replace GdkGC with Cairo
-    (void)msec;
+    // Invert the screen, wait, then invert back
+    if (gui.surface == NULL)
+	return;
+    gui_mch_invert_rectangle(0, 0, (int)Rows - 1, (int)Columns - 1);
+    ui_delay((long)msec, TRUE);
+    // Up to this point, the first inversion is not reflected on the screen. As
+    // a result, the next inversion reverts to the bottom, and the inversion
+    // effect cannot be visually confirmed.
+    gui_mch_invert_rectangle(0, 0, (int)Rows - 1, (int)Columns - 1);
 #else
     GdkGCValues	values;
     GdkGC	*invert_gc;
