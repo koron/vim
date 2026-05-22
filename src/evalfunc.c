@@ -56,6 +56,10 @@ static void f_execute(typval_T *argvars, typval_T *rettv);
 static void f_exists_compiled(typval_T *argvars, typval_T *rettv);
 static void f_expand(typval_T *argvars, typval_T *rettv);
 static void f_expandcmd(typval_T *argvars, typval_T *rettv);
+static void f_fcitx_activate(typval_T *argvars, typval_T *rettv);
+static void f_fcitx_close(typval_T *argvars, typval_T *rettv);
+static void f_fcitx_open(typval_T *argvars, typval_T *rettv);
+static void f_fcitx_status(typval_T *argvars, typval_T *rettv);
 static void f_feedkeys(typval_T *argvars, typval_T *rettv);
 static void f_fnameescape(typval_T *argvars, typval_T *rettv);
 static void f_foreground(typval_T *argvars, typval_T *rettv);
@@ -2216,6 +2220,14 @@ static const funcentry_T global_functions[] =
 			ret_extend,	    f_extend},
     {"extendnew",	2, 3, FEARG_1,	    arg23_extendnew,
 			ret_first_cont,	    f_extendnew},
+    {"fcitx_activate",	1, 1, FEARG_1,	    arg1_number,
+			ret_void,	    f_fcitx_activate},
+    {"fcitx_close",	0, 0, 0,	    NULL,
+			ret_void,	    f_fcitx_close},
+    {"fcitx_open",	0, 0, 0,	    NULL,
+			ret_number_bool,    f_fcitx_open},
+    {"fcitx_status",	0, 0, 0,	    NULL,
+			ret_number_bool,    f_fcitx_status},
     {"feedkeys",	1, 2, FEARG_1,	    arg2_string,
 			ret_void,	    f_feedkeys},
     {"file_readable",	1, 1, FEARG_1,	    arg1_string,	// obsolete
@@ -5051,6 +5063,208 @@ f_expandcmd(typval_T *argvars, typval_T *rettv)
 	--emsg_off;
 
     rettv->vval.v_string = cmdstr;
+}
+
+#include <dbus/dbus.h>
+
+static DBusConnection *fcitx_conn = NULL;
+static DBusMessage *fcitx_msg_activate = NULL;
+static DBusMessage *fcitx_msg_deactivate = NULL;
+static DBusMessage *fcitx_msg_state = NULL;
+
+    static void
+fcitx_close()
+{
+    if (fcitx_msg_activate)
+    {
+	dbus_message_unref(fcitx_msg_activate);
+	fcitx_msg_activate = NULL;
+    }
+    if (fcitx_msg_deactivate)
+    {
+	dbus_message_unref(fcitx_msg_deactivate);
+	fcitx_msg_deactivate = NULL;
+    }
+    if (fcitx_msg_state)
+    {
+	dbus_message_unref(fcitx_msg_state);
+	fcitx_msg_state = NULL;
+    }
+    if (fcitx_conn)
+    {
+	dbus_connection_unref(fcitx_conn);
+	fcitx_conn = NULL;
+    }
+}
+
+    static DBusMessage *
+fcitx_create_msg(const char *method)
+{
+    DBusMessage *msg;
+    msg = dbus_message_new_method_call(
+	    "org.fcitx.Fcitx5",
+	    "/controller",
+	    "org.fcitx.Fcitx.Controller1",
+	    method);
+    if (!msg)
+	ch_log(NULL, "fcitx: failed to create \"%s\" message", method);
+    return msg;
+}
+
+    static int
+fcitx_open()
+{
+    if (fcitx_conn)
+	return 1;
+
+    DBusError err;
+    DBusConnection *conn = NULL;
+
+    dbus_error_init(&err);
+    conn = dbus_bus_get(DBUS_BUS_SESSION, &err);
+    if (dbus_error_is_set(&err))
+    {
+	ch_log(NULL, "fcitx: failed to connect D-Bus: %s", err.message);
+	dbus_error_free(&err);
+	return 0;
+    }
+    if (!conn)
+    {
+	ch_log(NULL, "fcitx: null connection without errors");
+	return 0;
+    }
+
+    // Prepare messages
+    fcitx_msg_activate = fcitx_create_msg("Activate");
+    fcitx_msg_deactivate = fcitx_create_msg("Deactivate");
+    fcitx_msg_state = fcitx_create_msg("State");
+    if (!fcitx_msg_activate || !fcitx_msg_deactivate || !fcitx_msg_state)
+    {
+	fcitx_close();
+	return 0;
+    }
+
+    fcitx_conn = conn;
+    return 1;
+}
+
+    static int
+fcitx_state()
+{
+    if (!fcitx_open())
+	return 0;
+
+    int state = -1;
+    DBusError err;
+    DBusMessage *reply = NULL;
+
+    dbus_error_init(&err);
+
+    reply = dbus_connection_send_with_reply_and_block(fcitx_conn,
+	    fcitx_msg_state, -1, &err);
+    if (dbus_error_is_set(&err))
+    {
+	ch_log(NULL, "fcitx: failed to State method: %s", err.message);
+        dbus_error_free(&err);
+	goto theend;
+    }
+
+    if (!dbus_message_get_args(reply, &err, DBUS_TYPE_INT32, &state,
+		DBUS_TYPE_INVALID))
+    {
+	ch_log(NULL, "fcitx: failed to parse State response: %s", err.message);
+        dbus_error_free(&err);
+	goto theend;
+    }
+
+theend:
+    if (reply)
+	dbus_message_unref(reply);
+    return state;
+}
+
+    static void
+fcitx_activate()
+{
+    if (!fcitx_open())
+	return;
+
+    DBusError err;
+    DBusMessage *reply = NULL;
+
+    dbus_error_init(&err);
+
+    reply = dbus_connection_send_with_reply_and_block(fcitx_conn,
+	    fcitx_msg_activate, -1, &err);
+    if (dbus_error_is_set(&err))
+    {
+	ch_log(NULL, "fcitx: failed to Activate method: %s", err.message);
+        dbus_error_free(&err);
+	goto theend;
+    }
+
+theend:
+    if (reply)
+	dbus_message_unref(reply);
+}
+
+    static void
+fcitx_deactivate()
+{
+    if (!fcitx_open())
+	return;
+
+    DBusError err;
+    DBusMessage *reply = NULL;
+
+    dbus_error_init(&err);
+
+    reply = dbus_connection_send_with_reply_and_block(fcitx_conn,
+	    fcitx_msg_deactivate, -1, &err);
+    if (dbus_error_is_set(&err))
+    {
+	ch_log(NULL, "fcitx: failed to Deactivate method: %s", err.message);
+        dbus_error_free(&err);
+	goto theend;
+    }
+
+theend:
+    if (reply)
+	dbus_message_unref(reply);
+}
+
+    static void
+f_fcitx_open(typval_T *argvars, typval_T *rettv)
+{
+    rettv->vval.v_number = fcitx_open();
+}
+
+    static void
+f_fcitx_close(typval_T *argvars, typval_T *rettv UNUSED)
+{
+    fcitx_close();
+}
+
+    static void
+f_fcitx_status(typval_T *argvars, typval_T *rettv)
+{
+    rettv->vval.v_number = fcitx_state() > 1 ? 1 : 0;
+}
+
+    static void
+f_fcitx_activate(typval_T *argvars, typval_T *rettv UNUSED)
+{
+    if (in_vim9script() && check_for_float_or_nr_arg(argvars, 0) == FAIL)
+	return;
+
+    if (argvars[0].v_type != VAR_NUMBER)
+	return;
+
+    varnumber_T request = tv_get_number_chk(&argvars[0], NULL);
+    if (request)
+	fcitx_activate();
+    else
+	fcitx_deactivate();
 }
 
 /*

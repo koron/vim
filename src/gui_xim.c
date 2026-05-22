@@ -115,8 +115,11 @@ call_imactivatefunc(int active)
     static int
 call_imstatusfunc(void)
 {
+    typval_T argv[1];
     int is_active;
     int save_KeyTyped = KeyTyped;
+
+    argv[0].v_type = VAR_UNKNOWN;
 
     // FIXME: Don't execute user function in unsafe situation.
     if (exiting || is_autocmd_blocked())
@@ -124,7 +127,7 @@ call_imstatusfunc(void)
     // FIXME: :py print 'xxx' is shown duplicate result.
     // Use silent to avoid it.
     ++msg_silent;
-    is_active = call_callback_retnr(&imsf_cb, 0, NULL);
+    is_active = call_callback_retnr(&imsf_cb, 0, argv);
     --msg_silent;
 
     KeyTyped = save_KeyTyped;
