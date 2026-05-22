@@ -6550,12 +6550,13 @@ gui_mch_flash(int msec)
     // Invert the screen, wait, then invert back
     if (gui.surface == NULL)
 	return;
-    gui_mch_invert_rectangle(0, 0, (int)Rows - 1, (int)Columns - 1);
+    gui_mch_invert_rectangle(0, 0, (int)Rows, (int)Columns);
+    gui_mch_flush();
+    gui_mch_update();
     ui_delay((long)msec, TRUE);
-    // Up to this point, the first inversion is not reflected on the screen. As
-    // a result, the next inversion reverts to the bottom, and the inversion
-    // effect cannot be visually confirmed.
-    gui_mch_invert_rectangle(0, 0, (int)Rows - 1, (int)Columns - 1);
+    gui_mch_invert_rectangle(0, 0, (int)Rows, (int)Columns);
+    gui_mch_flush();
+    gui_mch_update();
 #else
     GdkGCValues	values;
     GdkGC	*invert_gc;

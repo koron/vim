@@ -1493,10 +1493,13 @@ gui_mch_flash(int msec)
     if (gui.surface == NULL)
 	return;
 
-    gui_mch_invert_rectangle(0, 0, (int)Rows - 1, (int)Columns - 1);
+    gui_mch_invert_rectangle(0, 0, (int)Rows, (int)Columns);
     gui_mch_flush();
+    gui_mch_update();
     ui_delay((long)msec, TRUE);
-    gui_mch_invert_rectangle(0, 0, (int)Rows - 1, (int)Columns - 1);
+    gui_mch_invert_rectangle(0, 0, (int)Rows, (int)Columns);
+    gui_mch_flush();
+    gui_mch_update();
 }
 
     void
@@ -1512,7 +1515,7 @@ gui_mch_invert_rectangle(int r, int c, int nr, int nc)
     cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
     cairo_rectangle(cr,
 	    FILL_X(c), FILL_Y(r),
-	    (nc + 1) * gui.char_width, (nr + 1) * gui.char_height);
+	    nc * gui.char_width, nr * gui.char_height);
     cairo_fill(cr);
     cairo_destroy(cr);
 
