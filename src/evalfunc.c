@@ -5072,6 +5072,48 @@ static DBusMessage *fcitx5_msg_activate = NULL;
 static DBusMessage *fcitx5_msg_deactivate = NULL;
 static DBusMessage *fcitx5_msg_state = NULL;
 
+static int fcitx5_open();
+static void fcitx5_close();
+static DBusMessage *fcitx5_create_msg(const char *method);
+static DBusMessage *fcitx5_send_msg(DBusMessage* request);
+
+    static int
+fcitx5_open()
+{
+    if (fcitx5_conn)
+	return 1;
+
+    DBusError err;
+    DBusConnection *conn = NULL;
+
+    dbus_error_init(&err);
+    conn = dbus_bus_get(DBUS_BUS_SESSION, &err);
+    if (dbus_error_is_set(&err))
+    {
+	ch_log(NULL, "fcitx: failed to connect D-Bus: %s", err.message);
+	dbus_error_free(&err);
+	return 0;
+    }
+    if (!conn)
+    {
+	ch_log(NULL, "fcitx: null connection without errors");
+	return 0;
+    }
+
+    // Prepare messages
+    fcitx5_msg_activate = fcitx5_create_msg("Activate");
+    fcitx5_msg_deactivate = fcitx5_create_msg("Deactivate");
+    fcitx5_msg_state = fcitx5_create_msg("State");
+    if (!fcitx5_msg_activate || !fcitx5_msg_deactivate || !fcitx5_msg_state)
+    {
+	fcitx5_close();
+	return 0;
+    }
+
+    fcitx5_conn = conn;
+    return 1;
+}
+
     static void
 fcitx5_close()
 {
@@ -5111,126 +5153,65 @@ fcitx5_create_msg(const char *method)
     return msg;
 }
 
-    static int
-fcitx5_open()
+    static DBusMessage *
+fcitx5_send_msg(DBusMessage* request)
 {
-    if (fcitx5_conn)
-	return 1;
-
-    DBusError err;
-    DBusConnection *conn = NULL;
-
-    dbus_error_init(&err);
-    conn = dbus_bus_get(DBUS_BUS_SESSION, &err);
-    if (dbus_error_is_set(&err))
-    {
-	ch_log(NULL, "fcitx: failed to connect D-Bus: %s", err.message);
-	dbus_error_free(&err);
-	return 0;
-    }
-    if (!conn)
-    {
-	ch_log(NULL, "fcitx: null connection without errors");
-	return 0;
-    }
-
-    // Prepare messages
-    fcitx5_msg_activate = fcitx5_create_msg("Activate");
-    fcitx5_msg_deactivate = fcitx5_create_msg("Deactivate");
-    fcitx5_msg_state = fcitx5_create_msg("State");
-    if (!fcitx5_msg_activate || !fcitx5_msg_deactivate || !fcitx5_msg_state)
-    {
-	fcitx5_close();
-	return 0;
-    }
-
-    fcitx5_conn = conn;
-    return 1;
-}
-
-    static int
-fcitx5_state()
-{
-    if (!fcitx5_open())
-	return 0;
-
-    int state = -1;
     DBusError err;
     DBusMessage *reply = NULL;
 
     dbus_error_init(&err);
 
     reply = dbus_connection_send_with_reply_and_block(fcitx5_conn,
-	    fcitx5_msg_state, -1, &err);
+	    request, -1, &err);
     if (dbus_error_is_set(&err))
     {
-	ch_log(NULL, "fcitx: failed to State method: %s", err.message);
+	ch_log(NULL, "fcitx: failed to %s method: %s", dbus_message_get_member(request), err.message);
         dbus_error_free(&err);
-	goto theend;
+	if (reply)
+	    dbus_message_unref(reply);
+	return NULL;
     }
+
+    return reply;
+}
+
+    static int
+fcitx5_get_state()
+{
+    if (!fcitx5_open())
+	return -1;
+
+    int state = -1;
+    DBusError err;
+    DBusMessage *reply;
+
+    dbus_error_init(&err);
+
+    reply = fcitx5_send_msg(fcitx5_msg_state);
+    if (!reply)
+	return -1;
 
     if (!dbus_message_get_args(reply, &err, DBUS_TYPE_INT32, &state,
 		DBUS_TYPE_INVALID))
     {
 	ch_log(NULL, "fcitx: failed to parse State response: %s", err.message);
         dbus_error_free(&err);
-	goto theend;
     }
 
-theend:
-    if (reply)
-	dbus_message_unref(reply);
+    dbus_message_unref(reply);
     return state;
 }
 
     static void
-fcitx5_activate()
+fcitx5_set_state(int active)
 {
     if (!fcitx5_open())
 	return;
-
-    DBusError err;
-    DBusMessage *reply = NULL;
-
-    dbus_error_init(&err);
-
-    reply = dbus_connection_send_with_reply_and_block(fcitx5_conn,
-	    fcitx5_msg_activate, -1, &err);
-    if (dbus_error_is_set(&err))
-    {
-	ch_log(NULL, "fcitx: failed to Activate method: %s", err.message);
-        dbus_error_free(&err);
-	goto theend;
-    }
-
-theend:
-    if (reply)
-	dbus_message_unref(reply);
-}
-
-    static void
-fcitx5_deactivate()
-{
-    if (!fcitx5_open())
+    DBusMessage *reply;
+    reply = fcitx5_send_msg(active ? fcitx5_msg_activate : fcitx5_msg_deactivate);
+    if (!reply)
 	return;
-
-    DBusError err;
-    DBusMessage *reply = NULL;
-
-    dbus_error_init(&err);
-
-    reply = dbus_connection_send_with_reply_and_block(fcitx5_conn,
-	    fcitx5_msg_deactivate, -1, &err);
-    if (dbus_error_is_set(&err))
-    {
-	ch_log(NULL, "fcitx: failed to Deactivate method: %s", err.message);
-        dbus_error_free(&err);
-	goto theend;
-    }
-
-theend:
-    if (reply)
-	dbus_message_unref(reply);
+    dbus_message_unref(reply);
 }
 
     static void
@@ -5248,7 +5229,7 @@ f_fcitx5_close(typval_T *argvars, typval_T *rettv UNUSED)
     static void
 f_fcitx5_status(typval_T *argvars, typval_T *rettv)
 {
-    rettv->vval.v_number = fcitx5_state() > 1 ? 1 : 0;
+    rettv->vval.v_number = fcitx5_get_state() > 1 ? 1 : 0;
 }
 
     static void
@@ -5260,11 +5241,8 @@ f_fcitx5_activate(typval_T *argvars, typval_T *rettv UNUSED)
     if (argvars[0].v_type != VAR_NUMBER)
 	return;
 
-    varnumber_T request = tv_get_number_chk(&argvars[0], NULL);
-    if (request)
-	fcitx5_activate();
-    else
-	fcitx5_deactivate();
+    varnumber_T active = tv_get_number_chk(&argvars[0], NULL);
+    fcitx5_set_state(active);
 }
 
 /*
