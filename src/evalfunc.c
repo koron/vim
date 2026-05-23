@@ -56,10 +56,10 @@ static void f_execute(typval_T *argvars, typval_T *rettv);
 static void f_exists_compiled(typval_T *argvars, typval_T *rettv);
 static void f_expand(typval_T *argvars, typval_T *rettv);
 static void f_expandcmd(typval_T *argvars, typval_T *rettv);
-static void f_fcitx_activate(typval_T *argvars, typval_T *rettv);
-static void f_fcitx_close(typval_T *argvars, typval_T *rettv);
-static void f_fcitx_open(typval_T *argvars, typval_T *rettv);
-static void f_fcitx_status(typval_T *argvars, typval_T *rettv);
+static void f_fcitx5_activate(typval_T *argvars, typval_T *rettv);
+static void f_fcitx5_close(typval_T *argvars, typval_T *rettv);
+static void f_fcitx5_open(typval_T *argvars, typval_T *rettv);
+static void f_fcitx5_status(typval_T *argvars, typval_T *rettv);
 static void f_feedkeys(typval_T *argvars, typval_T *rettv);
 static void f_fnameescape(typval_T *argvars, typval_T *rettv);
 static void f_foreground(typval_T *argvars, typval_T *rettv);
@@ -2220,14 +2220,14 @@ static const funcentry_T global_functions[] =
 			ret_extend,	    f_extend},
     {"extendnew",	2, 3, FEARG_1,	    arg23_extendnew,
 			ret_first_cont,	    f_extendnew},
-    {"fcitx_activate",	1, 1, FEARG_1,	    arg1_number,
-			ret_void,	    f_fcitx_activate},
-    {"fcitx_close",	0, 0, 0,	    NULL,
-			ret_void,	    f_fcitx_close},
-    {"fcitx_open",	0, 0, 0,	    NULL,
-			ret_number_bool,    f_fcitx_open},
-    {"fcitx_status",	0, 0, 0,	    NULL,
-			ret_number_bool,    f_fcitx_status},
+    {"fcitx5_activate",	1, 1, FEARG_1,	    arg1_number,
+			ret_void,	    f_fcitx5_activate},
+    {"fcitx5_close",	0, 0, 0,	    NULL,
+			ret_void,	    f_fcitx5_close},
+    {"fcitx5_open",	0, 0, 0,	    NULL,
+			ret_number_bool,    f_fcitx5_open},
+    {"fcitx5_status",	0, 0, 0,	    NULL,
+			ret_number_bool,    f_fcitx5_status},
     {"feedkeys",	1, 2, FEARG_1,	    arg2_string,
 			ret_void,	    f_feedkeys},
     {"file_readable",	1, 1, FEARG_1,	    arg1_string,	// obsolete
@@ -5067,38 +5067,38 @@ f_expandcmd(typval_T *argvars, typval_T *rettv)
 
 #include <dbus/dbus.h>
 
-static DBusConnection *fcitx_conn = NULL;
-static DBusMessage *fcitx_msg_activate = NULL;
-static DBusMessage *fcitx_msg_deactivate = NULL;
-static DBusMessage *fcitx_msg_state = NULL;
+static DBusConnection *fcitx5_conn = NULL;
+static DBusMessage *fcitx5_msg_activate = NULL;
+static DBusMessage *fcitx5_msg_deactivate = NULL;
+static DBusMessage *fcitx5_msg_state = NULL;
 
     static void
-fcitx_close()
+fcitx5_close()
 {
-    if (fcitx_msg_activate)
+    if (fcitx5_msg_activate)
     {
-	dbus_message_unref(fcitx_msg_activate);
-	fcitx_msg_activate = NULL;
+	dbus_message_unref(fcitx5_msg_activate);
+	fcitx5_msg_activate = NULL;
     }
-    if (fcitx_msg_deactivate)
+    if (fcitx5_msg_deactivate)
     {
-	dbus_message_unref(fcitx_msg_deactivate);
-	fcitx_msg_deactivate = NULL;
+	dbus_message_unref(fcitx5_msg_deactivate);
+	fcitx5_msg_deactivate = NULL;
     }
-    if (fcitx_msg_state)
+    if (fcitx5_msg_state)
     {
-	dbus_message_unref(fcitx_msg_state);
-	fcitx_msg_state = NULL;
+	dbus_message_unref(fcitx5_msg_state);
+	fcitx5_msg_state = NULL;
     }
-    if (fcitx_conn)
+    if (fcitx5_conn)
     {
-	dbus_connection_unref(fcitx_conn);
-	fcitx_conn = NULL;
+	dbus_connection_unref(fcitx5_conn);
+	fcitx5_conn = NULL;
     }
 }
 
     static DBusMessage *
-fcitx_create_msg(const char *method)
+fcitx5_create_msg(const char *method)
 {
     DBusMessage *msg;
     msg = dbus_message_new_method_call(
@@ -5112,9 +5112,9 @@ fcitx_create_msg(const char *method)
 }
 
     static int
-fcitx_open()
+fcitx5_open()
 {
-    if (fcitx_conn)
+    if (fcitx5_conn)
 	return 1;
 
     DBusError err;
@@ -5135,23 +5135,23 @@ fcitx_open()
     }
 
     // Prepare messages
-    fcitx_msg_activate = fcitx_create_msg("Activate");
-    fcitx_msg_deactivate = fcitx_create_msg("Deactivate");
-    fcitx_msg_state = fcitx_create_msg("State");
-    if (!fcitx_msg_activate || !fcitx_msg_deactivate || !fcitx_msg_state)
+    fcitx5_msg_activate = fcitx5_create_msg("Activate");
+    fcitx5_msg_deactivate = fcitx5_create_msg("Deactivate");
+    fcitx5_msg_state = fcitx5_create_msg("State");
+    if (!fcitx5_msg_activate || !fcitx5_msg_deactivate || !fcitx5_msg_state)
     {
-	fcitx_close();
+	fcitx5_close();
 	return 0;
     }
 
-    fcitx_conn = conn;
+    fcitx5_conn = conn;
     return 1;
 }
 
     static int
-fcitx_state()
+fcitx5_state()
 {
-    if (!fcitx_open())
+    if (!fcitx5_open())
 	return 0;
 
     int state = -1;
@@ -5160,8 +5160,8 @@ fcitx_state()
 
     dbus_error_init(&err);
 
-    reply = dbus_connection_send_with_reply_and_block(fcitx_conn,
-	    fcitx_msg_state, -1, &err);
+    reply = dbus_connection_send_with_reply_and_block(fcitx5_conn,
+	    fcitx5_msg_state, -1, &err);
     if (dbus_error_is_set(&err))
     {
 	ch_log(NULL, "fcitx: failed to State method: %s", err.message);
@@ -5184,9 +5184,9 @@ theend:
 }
 
     static void
-fcitx_activate()
+fcitx5_activate()
 {
-    if (!fcitx_open())
+    if (!fcitx5_open())
 	return;
 
     DBusError err;
@@ -5194,8 +5194,8 @@ fcitx_activate()
 
     dbus_error_init(&err);
 
-    reply = dbus_connection_send_with_reply_and_block(fcitx_conn,
-	    fcitx_msg_activate, -1, &err);
+    reply = dbus_connection_send_with_reply_and_block(fcitx5_conn,
+	    fcitx5_msg_activate, -1, &err);
     if (dbus_error_is_set(&err))
     {
 	ch_log(NULL, "fcitx: failed to Activate method: %s", err.message);
@@ -5209,9 +5209,9 @@ theend:
 }
 
     static void
-fcitx_deactivate()
+fcitx5_deactivate()
 {
-    if (!fcitx_open())
+    if (!fcitx5_open())
 	return;
 
     DBusError err;
@@ -5219,8 +5219,8 @@ fcitx_deactivate()
 
     dbus_error_init(&err);
 
-    reply = dbus_connection_send_with_reply_and_block(fcitx_conn,
-	    fcitx_msg_deactivate, -1, &err);
+    reply = dbus_connection_send_with_reply_and_block(fcitx5_conn,
+	    fcitx5_msg_deactivate, -1, &err);
     if (dbus_error_is_set(&err))
     {
 	ch_log(NULL, "fcitx: failed to Deactivate method: %s", err.message);
@@ -5234,25 +5234,25 @@ theend:
 }
 
     static void
-f_fcitx_open(typval_T *argvars, typval_T *rettv)
+f_fcitx5_open(typval_T *argvars, typval_T *rettv)
 {
-    rettv->vval.v_number = fcitx_open();
+    rettv->vval.v_number = fcitx5_open();
 }
 
     static void
-f_fcitx_close(typval_T *argvars, typval_T *rettv UNUSED)
+f_fcitx5_close(typval_T *argvars, typval_T *rettv UNUSED)
 {
-    fcitx_close();
+    fcitx5_close();
 }
 
     static void
-f_fcitx_status(typval_T *argvars, typval_T *rettv)
+f_fcitx5_status(typval_T *argvars, typval_T *rettv)
 {
-    rettv->vval.v_number = fcitx_state() > 1 ? 1 : 0;
+    rettv->vval.v_number = fcitx5_state() > 1 ? 1 : 0;
 }
 
     static void
-f_fcitx_activate(typval_T *argvars, typval_T *rettv UNUSED)
+f_fcitx5_activate(typval_T *argvars, typval_T *rettv UNUSED)
 {
     if (in_vim9script() && check_for_float_or_nr_arg(argvars, 0) == FAIL)
 	return;
@@ -5262,9 +5262,9 @@ f_fcitx_activate(typval_T *argvars, typval_T *rettv UNUSED)
 
     varnumber_T request = tv_get_number_chk(&argvars[0], NULL);
     if (request)
-	fcitx_activate();
+	fcitx5_activate();
     else
-	fcitx_deactivate();
+	fcitx5_deactivate();
 }
 
 /*
