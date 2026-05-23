@@ -681,6 +681,8 @@ WAYLAND_SRC
 WAYLAND_LIBS
 WAYLAND_CFLAGS
 WAYLAND_CPPFLAGS
+IMCTRL_OBJ
+IMCTRL_SRC
 TERM_TEST
 TERM_OBJ
 TERM_SRC
@@ -856,6 +858,7 @@ enable_rightleft
 enable_arabic
 enable_farsi
 enable_xim
+enable_imctrl_fcitx5
 enable_fontset
 with_wayland
 with_x
@@ -1538,6 +1541,7 @@ Optional Features:
   --disable-arabic        Do not include Arabic language support.
   --disable-farsi         Deprecated.
   --enable-xim            Include XIM input support.
+  --enable-imctrl-fcitx5  Include IM control for fcitx5 (need libdus-1).
   --enable-fontset        Include X fontset output support.
   --enable-gui=OPTS       X11 GUI. default=auto OPTS=auto/no/gtk2/gnome2/gtk3/gtk4/motif/haiku/photon/carbon
   --enable-gtk2-check     If auto-select GUI, check for GTK+ 2 default=yes
@@ -9186,6 +9190,87 @@ else case e in #(
 printf "%s\n" "defaulting to auto" >&6; } ;;
 esac
 fi
+
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking --enable-imctrl-fcitx5 argument" >&5
+printf %s "checking --enable-imctrl-fcitx5 argument... " >&6; }
+# Check whether --enable-imctrl-fcitx5 was given.
+if test ${enable_imctrl_fcitx5+y}
+then :
+  enableval=$enable_imctrl_fcitx5; { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $enable_imctrl_fcitx5" >&5
+printf "%s\n" "$enable_imctrl_fcitx5" >&6; }
+else case e in #(
+  e) enable_imctrl_fcitx5="no"; { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $enable_imctrl_fcitx5" >&5
+printf "%s\n" "$enable_imctrl_fcitx5" >&6; } ;;
+esac
+fi
+
+
+if test "$enable_imctrl_fcitx5" = "yes"; then
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for dbus_bus_get in -ldbus-1" >&5
+printf %s "checking for dbus_bus_get in -ldbus-1... " >&6; }
+if test ${ac_cv_lib_dbus_1_dbus_bus_get+y}
+then :
+  printf %s "(cached) " >&6
+else case e in #(
+  e) ac_check_lib_save_LIBS=$LIBS
+LIBS="-ldbus-1  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.
+   The 'extern "C"' is for builds by C++ compilers;
+   although this is not generally supported in C code supporting it here
+   has little cost and some practical benefit (sr 110532).  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char dbus_bus_get (void);
+int
+main (void)
+{
+return dbus_bus_get ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  ac_cv_lib_dbus_1_dbus_bus_get=yes
+else case e in #(
+  e) ac_cv_lib_dbus_1_dbus_bus_get=no ;;
+esac
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS ;;
+esac
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_dbus_1_dbus_bus_get" >&5
+printf "%s\n" "$ac_cv_lib_dbus_1_dbus_bus_get" >&6; }
+if test "x$ac_cv_lib_dbus_1_dbus_bus_get" = xyes
+then :
+  LIBS="$LIBS -ldbus-1"; dbus_ok=yes
+else case e in #(
+  e) { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: \"imctrl-fcitx5 DISABLED\"" >&5
+printf "%s\n" "\"imctrl-fcitx5 DISABLED\"" >&6; }; dbus_ok=no ;;
+esac
+fi
+
+  if test "$fail_if_missing" = "yes" -a "$dbus_ok" != "yes"; then
+    as_fn_error $? "could not configure imctrl-fcitx5" "$LINENO" 5
+  fi
+  if test "$dbus_ok" = "yes"; then
+    printf "%s\n" "#define FEAT_IMCTRL_FCITX5 1" >>confdefs.h
+
+    IMCTRL_SRC="imctrl_fcitx5.c"
+    IMCTRL_OBJ="objects/imctrl_fcitx5.o"
+  fi
+fi
+
+
 
 
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking --enable-fontset argument" >&5
