@@ -2425,7 +2425,7 @@ AC_ARG_ENABLE(xim,
 	AC_MSG_RESULT($enable_xim),
 	[enable_xim="auto"; AC_MSG_RESULT(defaulting to auto)])
 
-dnl IM control support with fcitx5
+dnl IM control support for fcitx5
 AC_MSG_CHECKING(--enable-imctrl-fcitx5 argument)
 AC_ARG_ENABLE(imctrl-fcitx5,
 	[  --enable-imctrl-fcitx5  Include IM control for fcitx5 (need libdus-1).],

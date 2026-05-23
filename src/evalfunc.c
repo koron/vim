@@ -56,12 +56,6 @@ static void f_execute(typval_T *argvars, typval_T *rettv);
 static void f_exists_compiled(typval_T *argvars, typval_T *rettv);
 static void f_expand(typval_T *argvars, typval_T *rettv);
 static void f_expandcmd(typval_T *argvars, typval_T *rettv);
-#ifdef FEAT_IMCTRL_FCITX5
-static void f_fcitx5_activate(typval_T *argvars, typval_T *rettv);
-static void f_fcitx5_close(typval_T *argvars, typval_T *rettv);
-static void f_fcitx5_open(typval_T *argvars, typval_T *rettv);
-static void f_fcitx5_status(typval_T *argvars, typval_T *rettv);
-#endif
 static void f_feedkeys(typval_T *argvars, typval_T *rettv);
 static void f_fnameescape(typval_T *argvars, typval_T *rettv);
 static void f_foreground(typval_T *argvars, typval_T *rettv);
@@ -2226,22 +2220,6 @@ static const funcentry_T global_functions[] =
 			ret_void,
 #ifdef FEAT_IMCTRL_FCITX5
 		f_fcitx5_activate
-#else
-		NULL
-#endif
-			},
-    {"fcitx5_close",	0, 0, 0,	    NULL,
-			ret_void,
-#ifdef FEAT_IMCTRL_FCITX5
-		f_fcitx5_close
-#else
-		NULL
-#endif
-			},
-    {"fcitx5_open",	0, 0, 0,	    NULL,
-			ret_number_bool,
-#ifdef FEAT_IMCTRL_FCITX5
-		f_fcitx5_open
 #else
 		NULL
 #endif

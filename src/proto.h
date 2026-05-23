@@ -101,6 +101,9 @@ extern int _stricoll(char *a, char *b);
 # include "hashtab.pro"
 # include "help.pro"
 # include "highlight.pro"
+# ifdef FEAT_IMCTRL_FCITX5
+#  include "imctrl_fcitx5.pro"
+# endif
 # include "indent.pro"
 # include "insexpand.pro"
 # include "json.pro"

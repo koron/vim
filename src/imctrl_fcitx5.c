@@ -19,7 +19,6 @@ static DBusMessage *fcitx5_msg_deactivate = NULL;
 static DBusMessage *fcitx5_msg_state = NULL;
 
 static int fcitx5_open();
-static void fcitx5_close();
 static DBusMessage *fcitx5_create_msg(const char *method);
 static DBusMessage *fcitx5_send_msg(DBusMessage* request);
 
@@ -60,7 +59,7 @@ fcitx5_open()
     return 1;
 }
 
-    static void
+    void
 fcitx5_close()
 {
     if (fcitx5_msg_activate)
@@ -158,18 +157,6 @@ fcitx5_set_state(int active)
     if (!reply)
 	return;
     dbus_message_unref(reply);
-}
-
-    void
-f_fcitx5_open(typval_T *argvars, typval_T *rettv)
-{
-    rettv->vval.v_number = fcitx5_open();
-}
-
-    void
-f_fcitx5_close(typval_T *argvars, typval_T *rettv UNUSED)
-{
-    fcitx5_close();
 }
 
     void

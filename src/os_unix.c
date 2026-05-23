@@ -3778,6 +3778,10 @@ mch_exit(int r)
 {
     exiting = TRUE;
 
+#ifdef FEAT_IMCTRL_FCITX5
+    fcitx5_close();
+#endif
+
 #if defined(FEAT_X11) && defined(FEAT_CLIPBOARD)
     x11_export_final_selection();
 #endif
