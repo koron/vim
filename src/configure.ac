@@ -2425,6 +2425,24 @@ AC_ARG_ENABLE(xim,
 	AC_MSG_RESULT($enable_xim),
 	[enable_xim="auto"; AC_MSG_RESULT(defaulting to auto)])
 
+AC_MSG_CHECKING(--enable-imctrl-fcitx5 argument)
+AC_ARG_ENABLE(imctrl-fcitx5,
+	[  --enable-imctrl-fcitx5  Include IM control for fcitx5 (need libdus-1).],
+	[AC_MSG_RESULT($enable_imctrl_fcitx5)],
+	[enable_imctrl_fcitx5="no"; AC_MSG_RESULT($enable_imctrl_fcitx5)])
+
+if test "$enable_imctrl_fcitx5" = "yes"; then
+  AC_CHECK_LIB(dbus-1, dbus_bus_get,
+               [LIBS="$LIBS -ldbus-1"; dbus_ok=yes],
+               [AC_MSG_RESULT("imctrl-fcitx5 DISABLED"); dbus_ok=no])
+  if test "$fail_if_missing" = "yes" -a "$dbus_ok" != "yes"; then
+    AC_MSG_ERROR([could not configure imctrl-fcitx5])
+  fi
+  if test "$dbus_ok" = "yes"; then
+    AC_DEFINE(FEAT_IMCTRL_FCITX5)
+  fi
+fi
+
 AC_MSG_CHECKING(--enable-fontset argument)
 AC_ARG_ENABLE(fontset,
 	[  --enable-fontset        Include X fontset output support.], ,

@@ -412,6 +412,9 @@
 /* Define if you want to include XIM support. */
 #undef FEAT_XIM
 
+/* Define if you want to include fcitx5 control support. */
+#undef FEAT_IMCTRL_FCITX5
+
 /* Define if you use GTK and want GNOME support. */
 #undef FEAT_GUI_GNOME
 
