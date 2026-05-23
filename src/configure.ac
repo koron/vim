@@ -2425,6 +2425,7 @@ AC_ARG_ENABLE(xim,
 	AC_MSG_RESULT($enable_xim),
 	[enable_xim="auto"; AC_MSG_RESULT(defaulting to auto)])
 
+dnl IM control support with fcitx5
 AC_MSG_CHECKING(--enable-imctrl-fcitx5 argument)
 AC_ARG_ENABLE(imctrl-fcitx5,
 	[  --enable-imctrl-fcitx5  Include IM control for fcitx5 (need libdus-1).],
@@ -2440,8 +2441,13 @@ if test "$enable_imctrl_fcitx5" = "yes"; then
   fi
   if test "$dbus_ok" = "yes"; then
     AC_DEFINE(FEAT_IMCTRL_FCITX5)
+    IMCTRL_SRC="imctrl_fcitx5.c"
+    IMCTRL_OBJ="objects/imctrl_fcitx5.o"
   fi
 fi
+
+AC_SUBST(IMCTRL_SRC)
+AC_SUBST(IMCTRL_OBJ)
 
 AC_MSG_CHECKING(--enable-fontset argument)
 AC_ARG_ENABLE(fontset,

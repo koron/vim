@@ -1320,6 +1320,8 @@ TERM_DEPS = \
 
 TERM_SRC = libvterm/src/*.c
 
+IMCTRL_SRC = imctrl_*.c
+
 XDIFF_SRC = \
 	xdiff/xdiffi.c \
 	xdiff/xemit.c \
@@ -1610,6 +1612,7 @@ BASIC_SRC = \
 SRC =	$(BASIC_SRC) \
 	$(GUI_SRC) \
 	$(TERM_SRC) \
+	$(IMCTRL_SRC) \
 	$(XDIFF_SRC) \
 	$(LUA_SRC) \
 	$(MZSCHEME_SRC) \
@@ -1785,6 +1788,7 @@ OBJ_COMMON = \
 	objects/bufwrite.o \
 	$(GUI_OBJ) \
 	$(TERM_OBJ) \
+	$(IMCTRL_OBJ) \
 	$(LUA_OBJ) \
 	$(MZSCHEME_OBJ) \
 	$(PERL_OBJ) \
@@ -1908,6 +1912,7 @@ PROTO_FILES = \
 	proto/if_ruby.pro \
 	proto/if_tcl.pro \
 	proto/if_xcmdsrv.pro \
+	proto/imctrl_fcitx5.pro \
 	proto/indent.pro \
 	proto/insexpand.pro \
 	proto/job.pro \
@@ -3442,6 +3447,9 @@ objects/if_ruby.o: if_ruby.c
 objects/if_tcl.o: if_tcl.c
 	$(CCC_NF) $(TCL_CFLAGS) $(ALL_CFLAGS) $(TCL_CFLAGS_EXTRA) -o $@ if_tcl.c
 
+objects/imctrl_fcitx5.o: imctrl_fcitx5.c
+	$(CCC) -o $@ imctrl_fcitx5.c
+
 objects/indent.o: indent.c
 	$(CCC) -o $@ indent.c
 
@@ -4072,6 +4080,11 @@ objects/if_xcmdsrv.o: auto/osdef.h if_xcmdsrv.c vim.h protodef.h auto/config.h f
  beval.h structs.h regexp.h gui.h \
  libvterm/include/vterm.h libvterm/include/vterm_keycodes.h alloc.h \
  ex_cmds.h spell.h proto.h globals.h errors.h version.h
+objects/imctrl_fcitx5.o: auto/osdef.h imctrl_fcitx5.c vim.h protodef.h auto/config.h feature.h \
+ os_unix.h ascii.h keymap.h termdefs.h macros.h option.h \
+ beval.h structs.h regexp.h gui.h \
+ libvterm/include/vterm.h libvterm/include/vterm_keycodes.h \
+ alloc.h ex_cmds.h spell.h proto.h globals.h errors.h
 objects/indent.o: auto/osdef.h indent.c vim.h protodef.h auto/config.h feature.h os_unix.h \
  ascii.h keymap.h termdefs.h macros.h option.h beval.h \
  structs.h regexp.h gui.h libvterm/include/vterm.h \
@@ -4747,6 +4760,7 @@ proto/if_python3.pro: if_python3.c
 proto/if_ruby.pro: if_ruby.c
 proto/if_tcl.pro: if_tcl.c
 proto/if_xcmdsrv.pro: if_xcmdsrv.c
+proto/imctrl_fcitx5.pro: imctrl_fcitx5.c
 proto/indent.pro: indent.c
 proto/insexpand.pro: insexpand.c
 proto/job.pro: job.c
