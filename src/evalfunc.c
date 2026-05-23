@@ -56,10 +56,12 @@ static void f_execute(typval_T *argvars, typval_T *rettv);
 static void f_exists_compiled(typval_T *argvars, typval_T *rettv);
 static void f_expand(typval_T *argvars, typval_T *rettv);
 static void f_expandcmd(typval_T *argvars, typval_T *rettv);
+#ifdef FEAT_IMCTRL_FCITX5
 static void f_fcitx5_activate(typval_T *argvars, typval_T *rettv);
 static void f_fcitx5_close(typval_T *argvars, typval_T *rettv);
 static void f_fcitx5_open(typval_T *argvars, typval_T *rettv);
 static void f_fcitx5_status(typval_T *argvars, typval_T *rettv);
+#endif
 static void f_feedkeys(typval_T *argvars, typval_T *rettv);
 static void f_fnameescape(typval_T *argvars, typval_T *rettv);
 static void f_foreground(typval_T *argvars, typval_T *rettv);
@@ -2221,13 +2223,37 @@ static const funcentry_T global_functions[] =
     {"extendnew",	2, 3, FEARG_1,	    arg23_extendnew,
 			ret_first_cont,	    f_extendnew},
     {"fcitx5_activate",	1, 1, FEARG_1,	    arg1_number,
-			ret_void,	    f_fcitx5_activate},
+			ret_void,
+#ifdef FEAT_IMCTRL_FCITX5
+		f_fcitx5_activate
+#else
+		NULL
+#endif
+			},
     {"fcitx5_close",	0, 0, 0,	    NULL,
-			ret_void,	    f_fcitx5_close},
+			ret_void,
+#ifdef FEAT_IMCTRL_FCITX5
+		f_fcitx5_close
+#else
+		NULL
+#endif
+			},
     {"fcitx5_open",	0, 0, 0,	    NULL,
-			ret_number_bool,    f_fcitx5_open},
+			ret_number_bool,
+#ifdef FEAT_IMCTRL_FCITX5
+		f_fcitx5_open
+#else
+		NULL
+#endif
+			},
     {"fcitx5_status",	0, 0, 0,	    NULL,
-			ret_number_bool,    f_fcitx5_status},
+			ret_number_bool,
+#ifdef FEAT_IMCTRL_FCITX5
+		f_fcitx5_status
+#else
+		NULL
+#endif
+			},
     {"feedkeys",	1, 2, FEARG_1,	    arg2_string,
 			ret_void,	    f_feedkeys},
     {"file_readable",	1, 1, FEARG_1,	    arg1_string,	// obsolete
@@ -5065,6 +5091,8 @@ f_expandcmd(typval_T *argvars, typval_T *rettv)
     rettv->vval.v_string = cmdstr;
 }
 
+#ifdef FEAT_IMCTRL_FCITX5
+
 #include <dbus/dbus.h>
 
 static DBusConnection *fcitx5_conn = NULL;
@@ -5244,6 +5272,8 @@ f_fcitx5_activate(typval_T *argvars, typval_T *rettv UNUSED)
     varnumber_T active = tv_get_number_chk(&argvars[0], NULL);
     fcitx5_set_state(active);
 }
+
+#endif // FEAT_IMCTRL_FCITX5
 
 /*
  * "feedkeys()" function
