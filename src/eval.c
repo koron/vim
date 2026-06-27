@@ -5277,9 +5277,9 @@ eval9(
     }
 
     // Limit recursion to 1000 levels.  At least at 10000 we run out of stack
-    // and crash.  With MSVC the stack is smaller.
+    // and crash.  MSVC and MSYSTEM=CLANG64 have a smaller stack.
     if (recurse ==
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(MSYSTEM_CLANG64)
 		    300
 #else
 		    1000

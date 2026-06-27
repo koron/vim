@@ -80,6 +80,42 @@ DIRECTX=yes
 # Set to yes to cross-compile from unix; no=native Windows (and Cygwin).
 CROSS=no
 
+# Specify yes or static if you want to use MSYSTEM (MSYS2) packages for some of
+# the libraries needed to build the Vim. If you specify "yes", it will link to
+# DLLs, and those packages will need to be installed at runtime. If you specify
+# "static", it will link to static libraries, and those packages will not be
+# required at runtime.
+#
+# Currently, the libraries that are targeted are ICONV, GETTEXT, and XPM. If
+# you specify "yes", all will be set to "msystem", and if you specify "static",
+# all will be set to "msystem-static".
+#
+# The default is no, so the previous configuration method can be used as is.
+#
+# The required MSYS2 packages depend on the value of the environment variable
+# MSYSTEM. See below for details:
+#
+#   If MSYSTEM=UCRT64 (recommended):
+#     ICONV:   mingw-w64-ucrt-x86_64-libiconv
+#     GETTEXT: mingw-w64-ucrt-x86_64-gettext-runtime
+#     XPM:     mingw-w64-ucrt-x86_64-xpm-nox
+#
+#   If MSYSTEM=CLANG64:
+#     ICONV:   mingw-w64-clang-x86_64-libiconv
+#     GETTEXT: mingw-w64-clang-x86_64-gettext-runtime
+#     XPM:     mingw-w64-clang-x86_64-xpm-nox
+#
+#   If MSYSTEM=MINGW64:
+#     ICONV:   mingw-w64-x86_64-libiconv
+#     GETTEXT: mingw-w64-x86_64-gettext-runtime
+#     XPM:     mingw-w64-x86_64-xpm-nox
+#
+#   If MSYSTEM=MINGW32 (not recommended):
+#     ICONV:   mingw-w64-i686-libiconv
+#     GETTEXT: mingw-w64-i686-gettext-runtime
+#     XPM:     mingw-w64-i686-xpm-nox
+USE_MSYSTEM_PACKAGES=no
+
 # Set to path to iconv.h and libiconv.a to enable using 'iconv.dll'.
 # Use "yes" when the path does not need to be define.
 #ICONV="."
@@ -106,6 +142,18 @@ CSCOPE=yes
 
 # Set to yes to enable Netbeans support (requires CHANNEL).
 NETBEANS=$(GUI)
+
+ifdef MSYSTEM
+  ifeq (CLANG64, $(MSYSTEM))
+USING_CLANG64:=yes
+# The only C/C++ compiler for MSYSTEM=CLANG64 is clang. gcc is an alias for
+# clang.
+CC:=clang
+  endif
+endif
+ifndef USING_CLANG64
+USING_CLANG64:=no
+endif
 
 # Set to yes to enable inter process communication.
 ifeq (HUGE, $(FEATURES))
@@ -142,7 +190,13 @@ endif
 # Link against the shared version of libwinpthread by default.  Set
 # STATIC_WINPTHREAD to "yes" to link against static version instead.
 ifndef STATIC_WINPTHREAD
+ ifeq (yes, $(USING_CLANG64))
+# In the MSYSTEM=CLANG64 environment, winpthread is not required because it
+# links with libc++
+STATIC_WINPTHREAD=no
+ else
 STATIC_WINPTHREAD=$(STATIC_STDCPLUS)
+ endif
 endif
 # If you use TDM-GCC(-64), change HAS_GCC_EH to "no".
 # This is used when STATIC_STDCPLUS=yes.
@@ -261,6 +315,17 @@ ARCH := native
  else
 ARCH := $(shell $(CC) -dumpmachine | sed -e "s/-.*//" -e "s/_/-/" -e "s/^mingw32$$/i686/")
  endif
+endif
+
+# Configure libraries according to the value of USE_MSYSTEM_PACKAGES
+ifeq (yes, $(USE_MSYSTEM_PACKAGES))
+ICONV=msystem
+GETTEXT=msystem
+XPM=msystem
+else ifeq (static, $(USE_MSYSTEM_PACKAGES))
+ICONV=msystem-static
+GETTEXT=msystem-static
+XPM=msystem-static
 endif
 
 
@@ -557,16 +622,26 @@ CXXFLAGS = -std=gnu++11
 WINDRES_FLAGS =
 EXTRA_LIBS =
 
+# Tell C/C++ source files that they are built with MSYSTEM=CLANG64
+ifeq (yes, $(USING_CLANG64))
+DEFINES += -DMSYSTEM_CLANG64
+endif
+
 ifdef GETTEXT
+  # Using gettext (libintl) from MSYSTEM
+ ifeq ($(findstring msystem, $(GETTEXT)),msystem)
+DEFINES += -DHAVE_GETTEXT=1 -DHAVE_BIND_TEXTDOMAIN_CODESET=1 -DHAVE_LOCALE_H=1
+ else
 DEFINES += -DHAVE_GETTEXT -DHAVE_LOCALE_H
 GETTEXTINCLUDE = $(GETTEXT)/include
 GETTEXTLIB = $(INTLPATH)
- ifeq (yes, $(GETTEXT))
+  ifeq (yes, $(GETTEXT))
 DEFINES += -DDYNAMIC_GETTEXT
- else ifdef DYNAMIC_GETTEXT
+  else ifdef DYNAMIC_GETTEXT
 DEFINES += -D$(DYNAMIC_GETTEXT)
-  ifdef GETTEXT_DYNAMIC
+   ifdef GETTEXT_DYNAMIC
 DEFINES += -DGETTEXT_DYNAMIC -DGETTEXT_DLL=\"$(GETTEXT_DYNAMIC)\"
+   endif
   endif
  endif
 endif
@@ -744,7 +819,11 @@ XPM = no
  endif
  ifdef XPM
   ifneq ($(XPM),no)
+   ifeq ($(findstring msystem, $(XPM)),msystem)
+CFLAGS += -DFEAT_XPM_W32 -DHAVE_X11_XPM_H=1
+   else ifneq ($(XPM),no)
 CFLAGS += -DFEAT_XPM_W32 -I $(XPM)/include -I $(XPM)/include/X11 -I $(XPM)/../include
+   endif
   endif
  endif
 
@@ -982,8 +1061,17 @@ ifneq ($(XPM),no)
 # Only allow XPM for a GUI build.
  ifeq (yes, $(GUI))
 OBJ += $(OUTDIR)/xpm_w32.o
+  # Using XPM from MSYSTEM
+  ifeq ($(findstring msystem, $(XPM)),msystem)
+   ifeq ($(XPM),msystem-static)
+LIB += -Wl,-Bstatic -lXpm -Wl,-Bdynamic
+   else
+LIB += -lXpm
+   endif
+  else
 # You'll need libXpm.a from http://gnuwin32.sf.net
 LIB += -L$(XPM)/lib -lXpm
+  endif
  endif
 endif
 
@@ -1067,15 +1155,23 @@ MAIN_TARGET = $(TARGET)
 endif
 
 ifdef GETTEXT
- ifneq (yes, $(GETTEXT))
-CFLAGS += -I$(GETTEXTINCLUDE)
-  ifndef STATIC_GETTEXT
-LIB += -L$(GETTEXTLIB) -l$(INTLLIB)
-   ifeq (USE_SAFE_GETTEXT_DLL, $(DYNAMIC_GETTEXT))
-OBJ+=$(SAFE_GETTEXT_DLL_OBJ)
-   endif
+ ifeq ($(findstring msystem, $(GETTEXT)),msystem)
+  ifeq ($(GETTEXT),msystem-static)
+LIB += -Wl,-Bstatic -lintl -Wl,-Bdynamic
   else
+LIB += -lintl
+  endif
+ else
+  ifneq (yes, $(GETTEXT))
+CFLAGS += -I$(GETTEXTINCLUDE)
+   ifndef STATIC_GETTEXT
+LIB += -L$(GETTEXTLIB) -l$(INTLLIB)
+    ifeq (USE_SAFE_GETTEXT_DLL, $(DYNAMIC_GETTEXT))
+OBJ+=$(SAFE_GETTEXT_DLL_OBJ)
+    endif
+   else
 LIB += -L$(GETTEXTLIB) -lintl
+   endif
   endif
  endif
 endif
@@ -1111,11 +1207,21 @@ LIB += -limm32
 endif
 
 ifdef ICONV
- ifneq (yes, $(ICONV))
+ # Using iconv from MSYSTEM
+ ifeq ($(findstring msystem, $(ICONV)),msystem)
+DEFINES += -DHAVE_ICONV_H=1 -DHAVE_ICONV=1
+  ifeq ($(ICONV),msystem-static)
+LIB += -Wl,-Bstatic -liconv -Wl,-Bdynamic
+  else
+LIB += -liconv
+  endif
+ else
+  ifneq (yes, $(ICONV))
 LIB += -L$(ICONV)
 CFLAGS += -I$(ICONV)
- endif
+  endif
 DEFINES+=-DDYNAMIC_ICONV
+ endif
 endif
 
 ifeq (yes, $(SOUND))
@@ -1125,8 +1231,12 @@ endif
 ifeq (yes, $(USE_STDCPLUS))
 LINK = $(CXX)
  ifeq (yes, $(STATIC_STDCPLUS))
+  ifeq (yes, $(USING_CLANG64))
+LIB += -Wl,-Bstatic -lc++ -Wl,-Bdynamic
+  else
 #LIB += -static-libstdc++ -static-libgcc
 LIB += -Wl,-Bstatic -lstdc++ -lgcc -Wl,-Bdynamic
+  endif
  endif
 else
 LINK = $(CC)

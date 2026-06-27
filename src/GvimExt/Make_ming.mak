@@ -17,6 +17,16 @@ CROSS = no
 # check also the executables
 MINGWOLD = no
 
+ifdef MSYSTEM
+  ifeq (CLANG64, $(MSYSTEM))
+USING_CLANG64:=yes
+CC:=clang
+  endif
+endif
+ifndef USING_CLANG64
+USING_CLANG64:=no
+endif
+
 # Link against the shared versions of libgcc/libstdc++ by default.  Set
 # STATIC_STDCPLUS to "yes" to link against static versions instead.
 STATIC_STDCPLUS=no
@@ -31,13 +41,17 @@ STATIC_LIBS=
 # Note: -static-libstdc++ is not available until gcc 4.5.x.
 LDFLAGS += -shared
 ifeq (yes, $(STATIC_STDCPLUS))
+ ifeq (yes, $(USING_CLANG64))
+STATIC_LIBS += -lc++
+ else
 LDFLAGS += -static-libgcc -static-libstdc++
 # Order important: gcc_eh must be placed before winpthread
 STATIC_LIBS += -lstdc++ -lgcc
- ifeq (yes, $(HAS_GCC_EH))
+  ifeq (yes, $(HAS_GCC_EH))
 STATIC_LIBS += -lgcc_eh
- endif
+  endif
 STATIC_LIBS += -lwinpthread
+ endif
 endif
 
 ifeq ($(CROSS),yes)
